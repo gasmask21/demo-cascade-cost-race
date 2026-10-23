@@ -1,0 +1,53 @@
+:root {
+  --ink: #102 intermediate;
+  --ink-soft: #3a4f4c;
+  --paper: #f3f7f5;
+  --paper-2: #e4eeea;
+  --teal-deep: #0b3d3a;
+  --teal: #1a6b64;
+  --teal-glow: #2a9d8f;
+  --amber: #f0a202;
+  --coral: #e07a5f;
+  --sky: #7eb8c9;
+  --success: #2a9d6a;
+  --fail: #c45c44;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --sans: "Sora", system-ui, sans-serif;
+  --display: "Fraunces", Georgia, serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(42, 157, 143, 0.18), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(240, 162, 2, 0.14), transparent 50%),
+    linear-gradient(165deg, #f7faf8 0%, #e8f0ec 42%, #dce8e3 100%);
+  background-attachment: fixed;
+}
+
+button {
+  font-family: inherit;
+}
+
+a {
+  color: var(--teal);
+}

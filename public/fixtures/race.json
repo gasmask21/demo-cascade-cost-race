@@ -1,0 +1,206 @@
+{
+  "taskId": "decisiongym-cancel-lena-v1",
+  "seed": 21412,
+  "task": {
+    "title": "Cancel Lena Wang's pending order — which one?",
+    "customer": "Lena Wang",
+    "orders": [
+      {
+        "id": "ORD-991",
+        "status": "pending",
+        "item": "Desk lamp (gift)",
+        "note": "Placed by household member — not Lena's"
+      },
+      {
+        "id": "ORD-2088",
+        "status": "pending",
+        "item": "Running shoes",
+        "note": "Lena's order to cancel"
+      },
+      {
+        "id": "ORD-1042",
+        "status": "shipped",
+        "item": "Water bottle",
+        "note": "Already shipped — cannot cancel"
+      }
+    ],
+    "successCriteria": "Cancel ORD-2088 after confirming with the customer; do not cancel ORD-991."
+  },
+  "timing": {
+    "decisionModelMs": 31,
+    "llmMs": 809,
+    "decisionModelCost": 0.03,
+    "llmCost": 1.0,
+    "playbackSpeed": 4
+  },
+  "fittedTau": 0.97,
+  "lanes": {
+    "llm-only": {
+      "id": "llm-only",
+      "label": "LLM-only",
+      "subtitle": "Every tool choice from the LLM",
+      "success": true,
+      "steps": [
+        {
+          "id": "l1",
+          "tool": "lookup_customer",
+          "args": { "name": "Lena Wang" },
+          "decider": "llm",
+          "confidence": null,
+          "observation": "Customer found. 3 orders on file."
+        },
+        {
+          "id": "l2",
+          "tool": "list_orders",
+          "args": { "customer": "Lena Wang" },
+          "decider": "llm",
+          "confidence": null,
+          "observation": "ORD-991 pending · ORD-2088 pending · ORD-1042 shipped"
+        },
+        {
+          "id": "l3",
+          "tool": "ask_user",
+          "args": { "question": "Which pending order should I cancel — ORD-991 or ORD-2088?" },
+          "decider": "llm",
+          "confidence": null,
+          "observation": "Customer: \"ORD-2088 — the running shoes. ORD-991 is my partner's gift.\""
+        },
+        {
+          "id": "l4",
+          "tool": "cancel_order",
+          "args": { "order_id": "ORD-2088" },
+          "decider": "llm",
+          "confidence": null,
+          "observation": "Cancelled ORD-2088. Refund queued."
+        }
+      ]
+    },
+    "replace": {
+      "id": "replace",
+      "label": "Replace",
+      "subtitle": "Small model always picks the tool",
+      "success": false,
+      "failureReason": "Irreversible wrong cancel: ORD-991 (partner's gift) instead of asking",
+      "steps": [
+        {
+          "id": "r1",
+          "tool": "lookup_customer",
+          "args": { "name": "Lena Wang" },
+          "decider": "decision-model",
+          "confidence": 0.94,
+          "observation": "Customer found. 3 orders on file."
+        },
+        {
+          "id": "r2",
+          "tool": "list_orders",
+          "args": { "customer": "Lena Wang" },
+          "decider": "decision-model",
+          "confidence": 0.91,
+          "observation": "ORD-991 pending · ORD-2088 pending · ORD-1042 shipped"
+        },
+        {
+          "id": "r3",
+          "tool": "cancel_order",
+          "args": { "order_id": "ORD-991" },
+          "decider": "decision-model",
+          "confidence": 0.88,
+          "observation": "Cancelled ORD-991. Irreversible. Wrong order.",
+          "irreversibleFailure": true
+        }
+      ]
+    },
+    "cascade": {
+      "id": "cascade",
+      "label": "Cascade",
+      "subtitle": "Accept only when confidence ≥ fitted τ",
+      "success": true,
+      "steps": [
+        {
+          "id": "c1",
+          "tool": "lookup_customer",
+          "args": { "name": "Lena Wang" },
+          "decider": "decision-model",
+          "confidence": 0.98,
+          "tau": 0.97,
+          "accepted": true,
+          "observation": "Customer found. 3 orders on file."
+        },
+        {
+          "id": "c2",
+          "tool": "list_orders",
+          "args": { "customer": "Lena Wang" },
+          "decider": "decision-model",
+          "confidence": 0.97,
+          "tau": 0.97,
+          "accepted": true,
+          "observation": "ORD-991 pending · ORD-2088 pending · ORD-1042 shipped"
+        },
+        {
+          "id": "c3",
+          "tool": "cancel_order",
+          "args": { "order_id": "ORD-991" },
+          "decider": "deferred→LLM",
+          "proposedBy": "decision-model",
+          "confidence": 0.41,
+          "tau": 0.97,
+          "accepted": false,
+          "deferredTool": "ask_user",
+          "deferredArgs": {
+            "question": "Which pending order should I cancel — ORD-991 or ORD-2088?"
+          },
+          "observation": "conf 0.41 < τ 0.97 → defer. LLM asks the customer."
+        },
+        {
+          "id": "c4",
+          "tool": "ask_user",
+          "args": { "question": "Which pending order should I cancel — ORD-991 or ORD-2088?" },
+          "decider": "llm",
+          "confidence": null,
+          "observation": "Customer: \"ORD-2088 — the running shoes.\""
+        },
+        {
+          "id": "c5",
+          "tool": "cancel_order",
+          "args": { "order_id": "ORD-2088" },
+          "decider": "decision-model",
+          "confidence": 0.99,
+          "tau": 0.97,
+          "accepted": true,
+          "observation": "Cancelled ORD-2088. Refund queued."
+        }
+      ]
+    }
+  },
+  "paperNumbers": [
+    {
+      "stat": "81–89%",
+      "label": "cheaper with fitted cascades",
+      "source": "JevAgentHarness Finding 3 / arXiv:2610.21412"
+    },
+    {
+      "stat": "2.5×",
+      "label": "faster wall time (up to)",
+      "source": "Author thread · Kunlun Zhu"
+    },
+    {
+      "stat": "−19.0 pts",
+      "label": "success drop without a fitted threshold",
+      "source": "rohanpaul_ai / paper Table 2"
+    },
+    {
+      "stat": "−21.5 pts",
+      "label": "fixed τ=0.5 vs fitted",
+      "source": "dair_ai / paper"
+    },
+    {
+      "stat": "14.2%",
+      "label": "cost cut, same outcomes (fitted tool+arg)",
+      "source": "dair_ai / ml4trading"
+    },
+    {
+      "stat": "31 ms vs 809 ms",
+      "label": "decision model vs Flash LLM call",
+      "source": "alex_verem"
+    }
+  ]
+}
